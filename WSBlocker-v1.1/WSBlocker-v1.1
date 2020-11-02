@@ -1,0 +1,74 @@
+#!/bin/bash
+# Project name : WSBlocker
+# Version : 1.1
+# Written by : KsrvcO
+# Tested on : Linux Based Servers and Apache webserver
+# Prevention support on vulnerability scanners : NetSparker
+# Video demo : https://www.youtube.com/watch?v=lWjPyzz8M68
+# Contact me : flower.k2000[at]gmail.com
+if ! [ $(id -u) = 0 ]; then
+	   echo "Run this tool as root privilege.Exited."
+	   exit 1
+else
+reset
+mkdir -p /tmp/wsblockertemp
+tmp_dir=/tmp/wsblockertemp
+log_dir=/var/log/apache2/access.log
+function banner(){
+echo -e "
+
+ ▄▄▌ ▐ ▄▌.▄▄ · ▄▄▄▄· ▄▄▌         ▄▄· ▄ •▄ ▄▄▄ .▄▄▄  
+ ██· █▌▐█▐█ ▀. ▐█ ▀█▪██•  ▪     ▐█ ▌▪█▌▄▌▪▀▄.▀·▀▄ █·
+ ██▪▐█▐▐▌▄▀▀▀█▄▐█▀▀█▄██▪   ▄█▀▄ ██ ▄▄▐▀▀▄·▐▀▀▪▄▐▀▀▄ 
+ ▐█▌██▐█▌▐█▄▪▐███▄▪▐█▐█▌▐▌▐█▌.▐▌▐███▌▐█.█▌▐█▄▄▌▐█•█▌
+  ▀▀▀▀ ▀▪ ▀▀▀▀ ·▀▀▀▀ .▀▀▀  ▀█▄▀▪·▀▀▀ ·▀  ▀ ▀▀▀ .▀  ▀
+     
+    Project name : WSBlocker
+    Version : 1.1
+    Written by : KsrvcO
+    Contact me : flower.k2000[at]gmail.com
+    Prevention support on vulnerability scanners : NetSparker
+
+"
+}
+banner
+echo -e "
+    1. Start monitoring 
+    2. List of blocked addresses
+    3. Bye and exit
+
+"
+read -p " [+] Choose your option : " option
+if [ $option == "1" ]
+    then 
+        clear
+        banner
+        echo ""
+        echo ""
+        echo "  Monitoring..."
+        echo ""
+        echo "" 
+        while (true)
+            do
+                cat $log_dir | grep "netsparker" | cut -d "[" -f1 | cut -d " " -f1 | sort -u > $tmp_dir/ips.txt
+                cat $tmp_dir/ips.txt | while read i; do echo $i | zone=$(firewall-cmd --get-active-zones | head -n 1) ; firewall-cmd --zone=$zone --add-rich-rule="rule family=ipv4 source address=$i reject" --permanent &>/dev/null ; firewall-cmd --reload 1>/dev/null ; echo -e " [+] IP address $i Blocked" ; done
+            done
+elif [ $option == "2" ]
+    then
+        banner
+        echo ""
+        echo "[+] List of Blocked addresses :"
+        echo "=================================="
+        zone=$(firewall-cmd --get-active-zones | head -n 1)
+        firewall-cmd --zone=$zone --list-all | grep "reject" | cut -d "=" -f3 | cut -d '"' -f2
+        echo ""
+elif [ $option == "3" ]
+    then
+        clear
+        echo " Bye Bye"
+        exit
+else
+    echo "Wrong Selection"
+    exit
+fi
+fi
